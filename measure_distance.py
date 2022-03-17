@@ -9,18 +9,31 @@ import time
 from time import sleep
 
 def find_marker(image):
-	# convert the image to grayscale, blur it, and detect edges
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    gray = cv2.GaussianBlur(gray, (5, 5), 0)
-    edged = cv2.Canny(gray, 50, 100)
-    cv2.imwrite('foo2.jpg', edged)
-    # find the contours in the edged image and keep the largest one;
-    # we'll assume that this is our piece of paper in the image
-    cnts = cv2.findContours(edged.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-    cnts = imutils.grab_contours(cnts)
-    c = max(cnts, key = cv2.contourArea)
-    # compute the bounding box of the of the paper region and return it
-    return cv2.minAreaRect(c)
+    hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+
+    l_b_pink = np.array([20, 120, 170])  # pink
+    u_b_pink = np.array([230, 255, 235])
+
+    l_b_green_blue = np.array([20, 0, 0])  # green, blue
+    u_b_green_blue = np.array([140, 140, 190])
+
+    l_b_orange = np.array([0, 160, 225])  # orange
+    u_b_orange = np.array([255, 255, 255])
+
+    l_b_white = np.array([0, 0, 190])  # white
+    u_b_white = np.array([180, 30, 255])
+
+    mask = cv2.inRange(hsv, l_b_pink, u_b_pink) | cv2.inRange(hsv, l_b_green_blue, u_b_green_blue) | cv2.inRange(hsv,
+                                                                                                                 l_b_orange,
+                                                                                                                 u_b_orange) | cv2.inRange(
+        hsv, l_b_white, u_b_white)
+    kernel = np.ones((25, 25), np.uint8)
+    dilation = cv2.dilate(mask, kernel, iterations=1)
+
+    contours0, hierarchy = cv2.findContours(dilation.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset=(0, 0))
+    cv2.drawContours(image, contours0, -1, 255, 3)
+    c = max(contours0, key=cv2.contourArea)
+    return cv2.boundingRect(c)
 
 def distance_to_camera(knownWidth, focalLength, perWidth):
     # compute and return the distance from the maker to the camera
