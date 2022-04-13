@@ -7,6 +7,7 @@ from picamera.array import PiRGBArray
 from picamera import PiCamera
 import time
 from time import sleep
+import picar_4wd as fc
 
 def find_marker(image):
     hsv = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
@@ -32,6 +33,9 @@ def find_marker(image):
 
     contours0, hierarchy = cv2.findContours(dilation.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset=(0, 0))
     cv2.drawContours(image, contours0, -1, 255, 3)
+    # print(contours0)
+    if len(contours0) == 0:
+        return None
     c = max(contours0, key=cv2.contourArea)
     return cv2.boundingRect(c)
 
@@ -54,28 +58,42 @@ with PiCamera() as camera:
     camera.start_preview()
     # Camera warm-up time
     sleep(2)
-    camera.capture('foo.jpg')
-	
-    image = cv2.imread('foo.jpg')
-    marker = find_marker(image)
-    focalLength = (marker[1][0] * KNOWN_DISTANCE) / KNOWN_WIDTH
-    camera.framerate = 24
-    print(focalLength)
-    camera.resolution = (640, 480)
+
+    camera.framerate = 1
+    # camera.resolution = (640, 480)
     rawCapture = PiRGBArray(camera, size=camera.resolution)
     # loop over the images
-    for frame in camera.capture_continuous(rawCapture, format="bgr",use_video_port=True):
+    for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
         # load the image, find the marker in the image, then compute the
         # distance to the marker from the camera
         image = frame.array
-        marker = find_marker(image)
-        inches = distance_to_camera(KNOWN_WIDTH, focalLength, marker[1][0])
-        # draw a bounding box around the image and display it
-        box = cv2.cv.BoxPoints(marker) if imutils.is_cv2() else cv2.boxPoints(marker)
-        box = np.int0(box)
-        cv2.drawContours(image, [box], -1, (0, 255, 0), 2)
-        cv2.putText(image, "%.2fft" % (inches / 12),
-            (image.shape[1] - 200, image.shape[0] - 20), cv2.FONT_HERSHEY_SIMPLEX,
-            2.0, (0, 255, 0), 3)
-        cv2.imshow("image", image)
-        cv2.waitKey(0)
+        imge = np.copy(image)
+        rawCapture.truncate(0) 
+        res = find_marker(image)
+        if res:
+            x, y, w, h = res
+            known_width = 7.00
+            focal_length = 0.315
+
+            resolution = [640, 480]
+
+            print(f'Top left corner cords: {x}, {y}\nDimentions: {w}, {h}')
+
+            avg_res = (resolution[0] + resolution[1]) / 2
+            m = avg_res / focal_length
+
+            x = 640 / (resolution[0] / m)
+            width_pixels_in_cm = w / x
+
+            print(width_pixels_in_cm)
+
+            distance_mm = (known_width * focal_length) / width_pixels_in_cm  # [mm*mm /mm = mm]
+
+            print(distance_mm)
+
+            if distance_mm < 20:
+                fc.forward(0)
+            else:
+                fc.forward(3)
+        else:
+            fc.forward(3)
