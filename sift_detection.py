@@ -138,13 +138,14 @@
 import numpy as np
 import cv2
 
-frame = cv2.imread('sample_imgs/p3.jpg')
+frame = cv2.imread('sample_imgs/p2.jpg')
 hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 kernel = np.ones((5,5), np.uint8)
 
-cont = cv2.Canny(frame, 110, 150)#110, 130
-img_dilation = cv2.dilate(cont, kernel, iterations=1)
-img_erode = cv2.erode(img_dilation, kernel, iterations=1)
+cont = cv2.Canny(frame, 310, 320)#110, 130
+n = 20
+img_dilation = cv2.dilate(cont, kernel, iterations=n)
+img_erode = cv2.erode(img_dilation, kernel, iterations=n)
 contours0, hierarchy = cv2.findContours(img_erode.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset=(0, 0))
 cv2.drawContours(frame, contours0, -1, 255, 3)
 c = max(contours0, key=cv2.contourArea)
@@ -169,7 +170,6 @@ x, y, w, h = cv2.boundingRect(c)
 cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 
 cv2.imwrite("./out.png", frame)
-
 
 # def findContours(self, image):
 #     contour_img = image.copy()
