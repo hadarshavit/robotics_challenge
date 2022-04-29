@@ -9,10 +9,10 @@ import time
 from time import sleep
 import picar_4wd as fc
 
-TIME2TARGET = 10
+TIME2TARGET = 7.6
 POWER = 3
-TIME4TURN = 3
-TURN_POWER = 1
+TIME4TURN = 2.26
+TURN_POWER = 10
 TIME4AVOIDANCE = 2
 
 
@@ -85,6 +85,7 @@ KNOWN_WIDTH = 7.0
 # load the furst image that contains an object that is KNOWN TO BE 2 feet
 # from our camera, then find the paper marker in the image, and initialize
 # the focal length
+# cv2.namedWindow( "im", cv2.WINDOW_AUTOSIZE )
 
 with PiCamera() as camera:
     camera.resolution = (640, 480)
@@ -106,10 +107,15 @@ with PiCamera() as camera:
         # load the image, find the marker in the image, then compute the
         # distance to the marker from the camera
         image = frame.array
+        # cv2.imshow('im',image)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows()
         # imge = np.copy(image)
         rawCapture.truncate(0)
-        dist_to_obs = distance_to_obstacle(image)
+        # dist_to_obs = distance_to_obstacle(image)
+        dist_to_obs = 100000
         cur_time = time.time()
+        print(state, pass_state, time_passed)
         if pass_state == 1:
             if cur_time - start_time >= TIME4TURN / 2:
                 pass_state = 2
@@ -118,18 +124,18 @@ with PiCamera() as camera:
         elif pass_state == 2:
             if cur_time - start_time >= TIME4AVOIDANCE:
                 pass_state = 3
-                fc.Counterclockwise(TURN_POWER)
+                fc.turn_left(TURN_POWER)
                 start_time = cur_time
         elif pass_state == 3:
             if cur_time - start_time >= TIME4TURN / 2:
                 pass_state = 4
-                fc.forward(TIME4AVOIDANCE)
+                fc.turn_right(TIME4AVOIDANCE)
                 start_time = cur_time
         elif pass_state == 4:
             if cur_time - start_time >= TIME4AVOIDANCE:
                 time_passed += cur_time - start_time
                 pass_state = 5
-                fc.Counterclockwise(TIME4AVOIDANCE)
+                fc.turn_left(TIME4AVOIDANCE)
                 start_time = cur_time
         elif pass_state == 5:
             if cur_time - start_time >= TIME4TURN / 2:
@@ -145,13 +151,13 @@ with PiCamera() as camera:
             if dist_to_obs < 20:
                 pass_state = 1
                 time_passed += cur_time - start_time
-                fc.clockwise(TURN_POWER)
+                fc.turn_right(TURN_POWER)
                 start_time = cur_time
             if cur_time - start_time >= TIME2TARGET - time_passed:
                 state = 1
                 time_passed = 0
                 # fc.turn_left(TURN_POWER)
-                fc.clockwise(TURN_POWER)
+                fc.turn_right(TURN_POWER)
                 start_time = cur_time
         elif state == 1:
             if cur_time - start_time >= TIME4TURN:
@@ -161,8 +167,11 @@ with PiCamera() as camera:
                 start_time = cur_time
         elif state == 2:
             # TODO detect end goal
-            if True:
+            if cur_time - start_time >= TIME2TARGET - time_passed:
                 fc.stop()
+                break
+
+                time_passe
 
 
 

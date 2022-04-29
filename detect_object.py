@@ -14,32 +14,32 @@ def nothing(x):
 # #
 # while True:
 #     frame = cv2.imread('sample_imgs/p4.jpg')
-#
+
 #     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-#
+
 #     l_h = cv2.getTrackbarPos("LH", "Tracking")
 #     l_s = cv2.getTrackbarPos("LS", "Tracking")
 #     l_v = cv2.getTrackbarPos("LV", "Tracking")
-#
+
 #     u_h = cv2.getTrackbarPos("UH", "Tracking")
 #     u_s = cv2.getTrackbarPos("US", "Tracking")
 #     u_v = cv2.getTrackbarPos("UV", "Tracking")
-#
+
 #     l_b = np.array([l_h, l_s, l_v])
 #     u_b = np.array([u_h, u_s, u_v])
-#
+
 #     mask = cv2.inRange(hsv, l_b, u_b)
-#
+
 #     res = cv2.bitwise_and(frame, frame, mask=mask)
-#
+
 #     cv2.imshow("frame", frame)
 #     cv2.imshow("mask", mask)
 #     cv2.imshow("res", res)
-#
+
 #     key = cv2.waitKey(1)
 #     if key == 27:
 #         break
-#
+
 # cv2.destroyAllWindows()
 
 
@@ -74,23 +74,23 @@ def nothing(x):
 frame = cv2.imread('sample_imgs/p4.jpg')
 hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-l_b_pink = np.array([20, 120, 170]) #pink
-u_b_pink = np.array([230, 255, 235])
+mask_l = np.array([12, 27, 152]) #pink
+mask_h = np.array([187, 177, 254])
 
-l_b_green_blue= np.array([20, 0, 0]) # green, blue
-u_b_green_blue = np.array([140, 140, 190])
+# l_b_green_blue= np.array([20, 0, 0]) # green, blue
+# u_b_green_blue = np.array([140, 140, 190])
 
-l_b_orange = np.array([0, 160, 225]) # orange
-u_b_orange = np.array([255, 255, 255])
+# l_b_orange = np.array([0, 160, 225]) # orange
+# u_b_orange = np.array([255, 255, 255])
 
-l_b_white = np.array([0, 0, 190]) # white
-u_b_white = np.array([180, 30, 255])
+# l_b_white = np.array([0, 0, 190]) # white
+# u_b_white = np.array([180, 30, 255])
 
-mask = cv2.inRange(hsv, l_b_pink, u_b_pink) | cv2.inRange(hsv, l_b_green_blue, u_b_green_blue) | cv2.inRange(hsv, l_b_orange, u_b_orange) | cv2.inRange(hsv, l_b_white, u_b_white)
-kernel = np.ones((25, 25),np.uint8)
+mask = cv2.inRange(hsv, mask_l, mask_h)# | cv2.inRange(hsv, l_b_green_blue, u_b_green_blue) | cv2.inRange(hsv, l_b_orange, u_b_orange) | cv2.inRange(hsv, l_b_white, u_b_white)
+kernel = np.ones((5, 5),np.uint8)
 dilation = cv2.dilate(mask,kernel,iterations = 1)
-
-contours0, hierarchy = cv2.findContours(dilation.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset=(0, 0))
+erodtion = cv2.erode(dilation, kernel, iterations=1)
+contours0, hierarchy = cv2.findContours(erodtion.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset=(0, 0))
 cv2.drawContours(frame, contours0, -1, 255, 3)
 c = max(contours0, key=cv2.contourArea)
 x, y, w, h = cv2.boundingRect(c)

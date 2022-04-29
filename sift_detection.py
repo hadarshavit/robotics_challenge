@@ -135,21 +135,40 @@
 #
 # img3 = cv2.drawMatches(img1, keypoints_1, img2, keypoints_2, matches[:50], img2, flags=2)
 # cv2.imwrite('out.jpg', img3)
+
+
+
+
+
+
+
+
+
+
 import numpy as np
 import cv2
 
-frame = cv2.imread('sample_imgs/p2.jpg')
-hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-kernel = np.ones((5,5), np.uint8)
+frame = cv2.imread('sample_imgs/p4.jpg')
+frame = frame[200:, 50:-50]
+# frame = cv2.bitwise_not(frame)
+# hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+# kernel = np.ones((5,5), np.uint8)
 
-cont = cv2.Canny(frame, 310, 320)#110, 130
-n = 20
-img_dilation = cv2.dilate(cont, kernel, iterations=n)
-img_erode = cv2.erode(img_dilation, kernel, iterations=n)
-contours0, hierarchy = cv2.findContours(img_erode.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset=(0, 0))
-cv2.drawContours(frame, contours0, -1, 255, 3)
-c = max(contours0, key=cv2.contourArea)
-x, y, w, h = cv2.boundingRect(c)
+# cont = cv2.Canny(frame, 230, 260)#110, 130
+# n = 1
+# img_dilation = cv2.dilate(cont, kernel, iterations=n)
+# img_erode = cv2.erode(img_dilation, kernel, iterations=n)
+# contours0, hierarchy = cv2.findContours(img_erode.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset=(0, 0))
+# cv2.drawContours(frame, contours0, -1, 255, 3)
+# c = max(contours0, key=cv2.contourArea)
+# x, y, w, h = cv2.boundingRect(c)
+
+# backSub = cv2.createBackgroundSubtractorMOG2(varThreshold=1000)
+# fgMask = backSub.apply(frame)
+# cv2.imwrite('mask.jpg', fgMask)
+
+
+
 # contoursBBS = []
 # for contour in contours0:
 #     [x, y, w, h] = cv2.boundingRect(contour)
@@ -167,9 +186,72 @@ x, y, w, h = cv2.boundingRect(c)
 # pts = cv2.boxPoints(box) # 4 outer corners
 # print(pts)
 
-cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
+mask_l = np.array([12, 27, 152]) #pink
+mask_h = np.array([187, 177, 254])
+
+mask = cv2.inRange(hsv, mask_l, mask_h)# | cv2.inRange(hsv, l_b_green_blue, u_b_green_blue) | cv2.inRange(hsv, l_b_orange, u_b_orange) | cv2.inRange(hsv, l_b_white, u_b_white)
+kernel = np.ones((5, 5),np.uint8)
+dilation = cv2.dilate(mask,kernel,iterations = 1)
+erodtion = cv2.erode(dilation, kernel, iterations=1)
+contours0, hierarchy = cv2.findContours(erodtion.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset=(0, 0))
+cv2.drawContours(frame, contours0, -1, 255, 3)
+c = max(contours0, key=cv2.contourArea)
+x, y, w, h = cv2.boundingRect(c)
+
+cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 cv2.imwrite("./out.png", frame)
+
+
+
+# cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+# cv2.imwrite("./out.png", frame)
+# x = 242
+# y = 454
+a = 29 # cm
+import numpy as np
+alpha = np.arctan(np.abs((480 - y) / (x - 320)))
+print(alpha)
+alpha += np.pi / 2
+print(alpha)
+
+cf = 0.305
+
+x3 = x * cf
+y3 = y * cf
+x4 = 320 * cf
+y4 = 480 * cf
+
+b = np.sqrt(np.power(x4 - x3, 2) + np.power(y4 - y3, 2))
+
+dh = np.sqrt(a**2+b**2-2*a*b*np.cos(alpha))
+print(dh)
+
+h = 14.5
+do = np.sqrt(dh ** 2+h**2)
+print(do)
+
+#x, y, w, h = res
+known_width = 7.00
+focal_length = 1000
+
+resolution = [440, 380]
+
+print(f'Top left corner cords: {x}, {y}\nDimentions: {w}, {h}')
+
+avg_res = (resolution[0] + resolution[1]) / 2
+m = avg_res / focal_length
+
+x = 440 / (resolution[0] / m)
+width_pixels_in_cm = w / x
+
+print(width_pixels_in_cm)
+
+distance_mm = (known_width * focal_length) / width_pixels_in_cm  # [mm*mm /mm = mm]
+
+print(distance_mm)
 
 # def findContours(self, image):
 #     contour_img = image.copy()
