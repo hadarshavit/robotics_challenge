@@ -53,6 +53,39 @@ def find_marker(frame):
     x, y, w, h = cv2.boundingRect(c)
     return x, y, w, h
 
+def detect_final_mark(frame):
+    frame = frame[300:, :]
+
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+    # mask_l = np.array([10, 70, 158]) #pink
+    # mask_h = np.array([190, 180, 220])
+    mask_l = np.array([148, 78, 105]) #pink
+    mask_h = np.array([255, 255, 255])
+    # l_b_green_blue= np.array([20, 0, 0]) # green, blue
+    # u_b_green_blue = np.array([140, 140, 190])
+
+    # l_b_orange = np.array([0, 160, 225]) # orange
+    # u_b_orange = np.array([255, 255, 255])
+
+    # l_b_white = np.array([0, 0, 190]) # white
+    # u_b_white = np.array([180, 30, 255])
+
+    mask = cv2.inRange(hsv, mask_l, mask_h)# | cv2.inRange(hsv, l_b_green_blue, u_b_green_blue) | cv2.inRange(hsv, l_b_orange, u_b_orange) | cv2.inRange(hsv, l_b_white, u_b_white)
+    kernel = np.ones((5, 5),np.uint8)
+    dilation = cv2.dilate(mask,kernel,iterations = 1)
+    erodtion = cv2.erode(dilation, kernel, iterations=1)
+    cv2.imwrite('out.png', erodtion)
+
+    contours0, hierarchy = cv2.findContours(erodtion.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset=(0, 0))
+    # print(contours0)
+    if len(contours0) == 0:
+        # print('no conts')
+        return None
+    cv2.drawContours(frame, contours0, -1, 255, 3)
+    c = max(contours0, key=cv2.contourArea)
+    x, y, w, h = cv2.boundingRect(c)
+    return x, y, w, h
 def distance_to_camera(knownWidth, focalLength, perWidth):
     # compute and return the distance from the maker to the camera
     return (knownWidth * focalLength) / perWidth
@@ -193,7 +226,14 @@ with PiCamera() as camera:
                 fc.turn_right(TURN_POWER)
                 start_time = cur_time
             # TODO detect end goal
-            if cur_time - start_time >= TIME2TARGET - time_passed:
+            if cur_time - start_time + time_passed >= TIME2TARGET * 0.66:
+                mark_pos = detect_final_mark(image)
+                if not mark_pos:
+                    fc.stop()
+                    break
+                x, y, w, h = mark_pos
+                print(x, y, w, h)
+            if cur_time - start_time >= TIME2TARGET * 1.3 - time_passed:
                 fc.stop()
                 break
 
