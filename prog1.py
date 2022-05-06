@@ -133,7 +133,7 @@ with PiCamera() as camera:
     # Camera warm-up time
     sleep(2)
 
-    camera.framerate = 30
+    camera.framerate = 15
     start_time = time.time()
     # camera.resolution = (640, 480)
     rawCapture = PiRGBArray(camera, size=camera.resolution)
@@ -229,15 +229,18 @@ with PiCamera() as camera:
             if cur_time - start_time + time_passed >= TIME2TARGET * 0.66:
                 mark_pos = detect_final_mark(image)
                 if not mark_pos:
-                    fc.stop()
-                    break
-                x, y, w, h = mark_pos
-                print(x, y, w, h)
-            if cur_time - start_time >= TIME2TARGET * 1.3 - time_passed:
+                    state = 3
+                    start_time = cur_time
+                else:
+                    x, y, w, h = mark_pos
+                    print(x, y, w, h)
+            # if cur_time - start_time >= TIME2TARGET * 1.3 - time_passed:
+            #     fc.stop()
+            #     break
+        elif state == 3:
+            if cur_time - start_time >= 1.5:
                 fc.stop()
                 break
-
-                time_passe
 
 
 
