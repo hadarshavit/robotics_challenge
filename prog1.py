@@ -86,6 +86,26 @@ def detect_final_mark(frame):
     c = max(contours0, key=cv2.contourArea)
     x, y, w, h = cv2.boundingRect(c)
     return x, y, w, h
+
+def find_obstacle_edges(img):
+        img = img[300:, :]
+        img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        img_blur = cv2.GaussianBlur(img_gray, (5, 5), 6)
+        img_canny = cv2.Canny(img_blur, 119, 175)
+        kernel = np.ones((9, 3))
+        img_dilate = cv2.dilate(img_canny, kernel, iterations=7)
+        final = cv2.erode(img_dilate, kernel, iterations=7)
+
+        contours0, hierarchy = cv2.findContours(final.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset=(0, 0))
+        # print(contours0)
+        if len(contours0) == 0:
+            # print('no conts')
+            return None
+        # cv2.drawContours(frame, contours0, -1, 255, 3)
+        c = max(contours0, key=cv2.contourArea)
+        x, y, w, h = cv2.boundingRect(c)
+        return x, y, w, h
+
 def distance_to_camera(knownWidth, focalLength, perWidth):
     # compute and return the distance from the maker to the camera
     return (knownWidth * focalLength) / perWidth
@@ -141,6 +161,7 @@ with PiCamera() as camera:
     fc.forward(POWER)
     time_passed = 0
     pass_state = 0
+    final_steering = 0
     i = 0
     # loop over the images
     for frame in camera.capture_continuous(rawCapture, format="bgr", use_video_port=True):
@@ -155,12 +176,23 @@ with PiCamera() as camera:
         # dist_to_obs = distance_to_obstacle(image)
         res = find_marker(image)
         # print(res)
+
         if res:
-            x,y,w,h = res
-            cv2.rectangle(image, (x, y + 300), (x + w , y + h + 300), (0, 255, 0), 2)
-            cv2.imwrite(f'out{i}.png', image)
-            i += 1
-            dist_to_obs = distance_to_camera(knownWidth=7, focalLength=530, perWidth=w)
+            print('color' ,res)
+            res = find_obstacle_edges(image)
+            if not res:
+                dist_to_obs = 1000
+            else:
+                x,y,w,h = res
+                print('edged', x, y, w, h)
+                # cv2.rectangle(image, (x, y + 300), (x + w , y + h + 300), (0, 255, 0), 2)
+                # cv2.imwrite(f'out{i}.png', image)
+
+                i += 1
+                if x >= 440 or x <= 200:
+                    dist_to_obs = 1000
+                else:
+                    dist_to_obs = distance_to_camera(knownWidth=7, focalLength=530, perWidth=w)
         else:
             dist_to_obs = 10000
         cur_time = time.time()
@@ -234,6 +266,17 @@ with PiCamera() as camera:
                 else:
                     x, y, w, h = mark_pos
                     print(x, y, w, h)
+                    mid = x + w / 2
+                    if mid < 200 and w < 80: # turn left
+                        final_steering = 1
+                        fc.turn_left(1)
+                        start_time = cur_time
+                    elif mid > 440 and w < 80: # turn right:
+                        final_steering = 2 
+                        fc.turn_right(1)
+                        start_time = cur_time
+                    else:
+                        fc.forward(POWER)
             # if cur_time - start_time >= TIME2TARGET * 1.3 - time_passed:
             #     fc.stop()
             #     break
