@@ -24,30 +24,19 @@ def find_marker(frame):
 
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    # mask_l = np.array([10, 70, 158]) #pink
-    # mask_h = np.array([190, 180, 220])
     mask_l = np.array([0, 90, 0]) #pink
     mask_h = np.array([111, 217, 148])
-    # l_b_green_blue= np.array([20, 0, 0]) # green, blue
-    # u_b_green_blue = np.array([140, 140, 190])
 
-    # l_b_orange = np.array([0, 160, 225]) # orange
-    # u_b_orange = np.array([255, 255, 255])
-
-    # l_b_white = np.array([0, 0, 190]) # white
-    # u_b_white = np.array([180, 30, 255])
-
-    mask = cv2.inRange(hsv, mask_l, mask_h)# | cv2.inRange(hsv, l_b_green_blue, u_b_green_blue) | cv2.inRange(hsv, l_b_orange, u_b_orange) | cv2.inRange(hsv, l_b_white, u_b_white)
+    mask = cv2.inRange(hsv, mask_l, mask_h)
     kernel = np.ones((5, 5),np.uint8)
     dilation = cv2.dilate(mask,kernel,iterations = 1)
     erodtion = cv2.erode(dilation, kernel, iterations=1)
-    # cv2.imwrite('out.png', erodtion)
 
     contours0, hierarchy = cv2.findContours(erodtion.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset=(0, 0))
-    # print(contours0)
+
     if len(contours0) == 0:
-        # print('no conts')
         return None
+
     cv2.drawContours(frame, contours0, -1, 255, 3)
     c = max(contours0, key=cv2.contourArea)
     x, y, w, h = cv2.boundingRect(c)
@@ -63,11 +52,10 @@ def find_obstacle_edges(img):
         final = cv2.erode(img_dilate, kernel, iterations=7)
 
         contours0, hierarchy = cv2.findContours(final.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset=(0, 0))
-        # print(contours0)
+
         if len(contours0) == 0:
-            # print('no conts')
             return None
-        # cv2.drawContours(frame, contours0, -1, 255, 3)
+
         c = max(contours0, key=cv2.contourArea)
         x, y, w, h = cv2.boundingRect(c)
         return x, y, w, h
@@ -77,29 +65,17 @@ def detect_final_mark(frame):
 
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    # mask_l = np.array([10, 70, 158]) #pink
-    # mask_h = np.array([190, 180, 220])
-    mask_l = np.array([148, 78, 105]) #pink
+    mask_l = np.array([148, 78, 105])
     mask_h = np.array([255, 255, 255])
-    # l_b_green_blue= np.array([20, 0, 0]) # green, blue
-    # u_b_green_blue = np.array([140, 140, 190])
 
-    # l_b_orange = np.array([0, 160, 225]) # orange
-    # u_b_orange = np.array([255, 255, 255])
-
-    # l_b_white = np.array([0, 0, 190]) # white
-    # u_b_white = np.array([180, 30, 255])
-
-    mask = cv2.inRange(hsv, mask_l, mask_h)# | cv2.inRange(hsv, l_b_green_blue, u_b_green_blue) | cv2.inRange(hsv, l_b_orange, u_b_orange) | cv2.inRange(hsv, l_b_white, u_b_white)
+    mask = cv2.inRange(hsv, mask_l, mask_h)
     kernel = np.ones((5, 5),np.uint8)
     dilation = cv2.dilate(mask,kernel,iterations = 1)
     erodtion = cv2.erode(dilation, kernel, iterations=1)
-    # cv2.imwrite('out.png', erodtion)
 
     contours0, hierarchy = cv2.findContours(erodtion.copy(), cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE, offset=(0, 0))
-    # print(contours0)
+
     if len(contours0) == 0:
-        # print('no conts')
         return None
     cv2.drawContours(frame, contours0, -1, 255, 3)
     c = max(contours0, key=cv2.contourArea)
@@ -111,42 +87,6 @@ def distance_to_camera(knownWidth, focalLength, perWidth):
     # compute and return the distance from the maker to the camera
     return (knownWidth * focalLength) / perWidth
 
-def distance_to_obstacle(img):
-    res = find_marker(image)
-    if res:
-        x, y, w, h = res
-        known_width = 7.00
-        focal_length = 0.315
-
-        resolution = [640, 480]
-
-        print(f'Top left corner cords: {x}, {y}\nDimentions: {w}, {h}')
-
-        avg_res = (resolution[0] + resolution[1]) / 2
-        m = avg_res / focal_length
-
-        x = 640 / (resolution[0] / m)
-        width_pixels_in_cm = w / x
-
-        print(width_pixels_in_cm)
-
-        distance_mm = (known_width * focal_length) / width_pixels_in_cm  # [mm*mm /mm = mm]
-
-        print(distance_mm)
-
-        return distance_mm
-
-    return 1000
-
-# initialize the known distance from the camera to the object, which
-# in this case is 24 inches
-KNOWN_DISTANCE = 25.5
-# initialize the known object width, which in this case, the piece of
-# paper is 12 inches wide
-KNOWN_WIDTH = 7.0
-# load the furst image that contains an object that is KNOWN TO BE 2 feet
-# from our camera, then find the paper marker in the image, and initialize
-# the focal length
 
 with PiCamera() as camera:
     camera.resolution = (640, 480)
@@ -156,7 +96,6 @@ with PiCamera() as camera:
 
     camera.framerate = 15
     start_time = time.time()
-    # camera.resolution = (640, 480)
     rawCapture = PiRGBArray(camera, size=camera.resolution)
     state = 0
     fc.forward(POWER)
@@ -169,13 +108,9 @@ with PiCamera() as camera:
         # distance to the marker from the camera
         cur_time = time.time()
         image = frame.array
-        # cv2.imshow('im',image)
-        # cv2.waitKey(0)
-        # cv2.destroyAllWindows()
-        # imge = np.copy(image)
+
         rawCapture.truncate(0)
         res = find_marker(image)
-        # print(res)
 
         if res:
             print('color' ,res)
@@ -185,8 +120,6 @@ with PiCamera() as camera:
             else:
                 x,y,w,h = res
                 print('edged', x, y, w, h)
-                # cv2.rectangle(image, (x, y + 300), (x + w , y + h + 300), (0, 255, 0), 2)
-                # cv2.imwrite(f'out{i}.png', image)
 
                 i += 1
                 if x >= 440 or x <= 200:
@@ -247,7 +180,6 @@ with PiCamera() as camera:
             if cur_time - start_time >= TIME2TARGET - time_passed:
                 state = 1
                 time_passed = 0
-                # fc.turn_left(TURN_POWER)
                 fc.turn_right(TURN_POWER)
                 start_time = cur_time
         elif state == 1:
@@ -260,7 +192,6 @@ with PiCamera() as camera:
             if cur_time - start_time >= TIME2TARGET / 2 - time_passed:
                 state = 3
                 time_passed = 0
-                # fc.turn_left(TURN_POWER)
                 fc.turn_right(TURN_POWER)
                 start_time = cur_time
         elif state == 3:
@@ -273,7 +204,6 @@ with PiCamera() as camera:
             if cur_time - start_time >= TIME2TARGET - time_passed:
                 state = 5
                 time_passed = 0
-                # fc.turn_left(TURN_POWER)
                 fc.turn_right(TURN_POWER)
                 start_time = cur_time
         elif state == 5:
@@ -295,51 +225,13 @@ with PiCamera() as camera:
                     if mid < 200 and w < 80: # turn left
                         final_steering = 1
                         fc.turn_left(1)
-                        # start_time = cur_time
                     elif mid > 440 and w < 80: # turn right:
                         final_steering = 2 
                         fc.turn_right(1)
-                        # start_time = cur_time
                     else:
                         fc.forward(POWER)
-            # if cur_time - start_time >= TIME2TARGET * 1.3 - time_passed:
-            #     fc.stop()
-            #     break
         elif state == 7:
             if cur_time - start_time >= 1.5:
                 fc.stop()
                 break
 
-
-
-        # image = frame.array
-        # imge = np.copy(image)
-        # rawCapture.truncate(0)
-        # res = find_marker(image)
-        # if res:
-        #     x, y, w, h = res
-        #     known_width = 7.00
-        #     focal_length = 0.315
-
-        #     resolution = [640, 480]
-
-        #     print(f'Top left corner cords: {x}, {y}\nDimentions: {w}, {h}')
-
-        #     avg_res = (resolution[0] + resolution[1]) / 2
-        #     m = avg_res / focal_length
-
-        #     x = 640 / (resolution[0] / m)
-        #     width_pixels_in_cm = w / x
-
-        #     print(width_pixels_in_cm)
-
-        #     distance_mm = (known_width * focal_length) / width_pixels_in_cm  # [mm*mm /mm = mm]
-
-        #     print(distance_mm)
-
-        #     if distance_mm < 20:
-        #         fc.forward(0)
-        #     else:
-        #         fc.forward(3)
-        # else:
-        #     fc.forward(3)
