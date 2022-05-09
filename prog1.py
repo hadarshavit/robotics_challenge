@@ -11,7 +11,7 @@ import picar_4wd as fc
 
 TIME2TARGET = 7.6
 POWER = 3
-TIME4TURN = 2.1
+TIME4TURN = 1.9
 TURN_90_rigth = 1.02
 TURN_90_left = 1.1
 TURN_POWER = 10
@@ -189,7 +189,7 @@ with PiCamera() as camera:
                 # cv2.imwrite(f'out{i}.png', image)
 
                 i += 1
-                if x >= 440 or x <= 200:
+                if x >= 590 or x <= 50:
                     dist_to_obs = 1000
                 else:
                     dist_to_obs = distance_to_camera(knownWidth=7, focalLength=530, perWidth=w)
@@ -260,27 +260,31 @@ with PiCamera() as camera:
             # TODO detect end goal
             if cur_time - start_time + time_passed >= TIME2TARGET * 0.66:
                 mark_pos = detect_final_mark(image)
+                print('mark pos', mark_pos)
                 if not mark_pos:
+                    print('no mark, going forward')
+                    fc.forward(POWER)
                     state = 3
                     start_time = cur_time
                 else:
                     x, y, w, h = mark_pos
-                    print(x, y, w, h)
+                    print('fina mark', x, y, w, h)
                     mid = x + w / 2
                     if mid < 200 and w < 80: # turn left
                         final_steering = 1
                         fc.turn_left(1)
-                        start_time = cur_time
+                        # start_time = cur_time
                     elif mid > 440 and w < 80: # turn right:
                         final_steering = 2 
                         fc.turn_right(1)
-                        start_time = cur_time
+                        # start_time = cur_time
                     else:
                         fc.forward(POWER)
             # if cur_time - start_time >= TIME2TARGET * 1.3 - time_passed:
             #     fc.stop()
             #     break
         elif state == 3:
+            fc.forward(POWER)
             if cur_time - start_time >= 1.5:
                 fc.stop()
                 break

@@ -11,7 +11,7 @@ import picar_4wd as fc
 
 TIME2TARGET = 7.6
 POWER = 3
-TURN_90_rigth = 1.02
+TURN_90_rigth = 0.95
 TIME4TURN = TURN_90_rigth
 TURN_90_left = 1.02
 TURN_POWER = 10
@@ -295,11 +295,11 @@ with PiCamera() as camera:
                     if mid < 200 and w < 80: # turn left
                         final_steering = 1
                         fc.turn_left(1)
-                        start_time = cur_time
+                        # start_time = cur_time
                     elif mid > 440 and w < 80: # turn right:
                         final_steering = 2 
                         fc.turn_right(1)
-                        start_time = cur_time
+                        # start_time = cur_time
                     else:
                         fc.forward(POWER)
             # if cur_time - start_time >= TIME2TARGET * 1.3 - time_passed:
